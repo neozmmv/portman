@@ -5,10 +5,25 @@ REPO="neozmmv/portman"
 BIN_NAME="portman"
 INSTALL_DIR="/usr/local/bin"
 
-LATEST="stable"
-URL="https://github.com/$REPO/releases/download/$LATEST/$BIN_NAME"
+ARCH="$(uname -m)"
 
-echo "Installing $BIN_NAME from $LATEST"
+case "$ARCH" in
+  x86_64)
+    ASSET="portman-linux-amd64"
+    ;;
+  aarch64|arm64)
+    ASSET="portman-linux-arm64"
+    ;;
+  *)
+    echo "Unsupported architecture: $ARCH"
+    exit 1
+    ;;
+esac
+
+TAG="stable"
+URL="https://github.com/$REPO/releases/download/$TAG/$ASSET"
+
+echo "Installing $BIN_NAME ($ASSET) from $TAG"
 curl -fL "$URL" -o "/tmp/$BIN_NAME"
 chmod +x "/tmp/$BIN_NAME"
 
