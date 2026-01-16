@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -e
+set -euo pipefail
 
 REPO="neozmmv/portman"
 BIN_NAME="portman"
@@ -20,15 +20,25 @@ case "$ARCH" in
     ;;
 esac
 
-TAG="stable"
-URL="https://github.com/$REPO/releases/download/$TAG/$ASSET"
+VERSION="${PORTMAN_VERSION:-latest}"
+if [[ "$VERSION" == "latest" ]]; then
+  URL="https://github.com/$REPO/releases/latest/download/$ASSET"
+else
+  URL="https://github.com/$REPO/releases/download/$VERSION/$ASSET"
+fi
 
-echo "Installing $BIN_NAME ($ASSET) from $TAG"
-curl -fL "$URL" -o "/tmp/$BIN_NAME"
-chmod +x "/tmp/$BIN_NAME"
+TMP_BIN="$(mktemp -t portman.XXXXXX)"
 
-sudo mv "/tmp/$BIN_NAME" "$INSTALL_DIR/$BIN_NAME"
+echo "Installing $BIN_NAME ($ASSET) from $VERSION"
+curl -fsSL "$URL" -o "$TMP_BIN"
+chmod +x "$TMP_BIN"
+
+sudo mv "$TMP_BIN" "$INSTALL_DIR/$BIN_NAME"
 sudo chmod +x "$INSTALL_DIR/$BIN_NAME"
 
 echo "Installed at $INSTALL_DIR/$BIN_NAME"
 echo "Run: sudo portman"
+
+if command -v "$BIN_NAME" >/dev/null 2>&1; then
+  "$BIN_NAME" version || true
+fi
