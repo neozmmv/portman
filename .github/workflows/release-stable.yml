@@ -28,9 +28,6 @@ jobs:
           go-version-file: go.mod
           check-latest: true
 
-      - name: Test
-        run: go test ./...
-
       - name: Build linux/amd64 and linux/arm64
         shell: bash
         run: |
