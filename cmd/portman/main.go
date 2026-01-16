@@ -14,13 +14,18 @@ import (
 	"portman/internal/rules"
 )
 
+// version is set at build time via:
+// go build -ldflags "-X main.version=v1.2.3"
+var version = "dev"
+
 func usage() {
 	fmt.Print(`Usage:
   portman open   <port> <proto> [--file <rules.v4>] [--dry-run] [--apply]
   portman close  <port> <proto> [--file <rules.v4>] [--dry-run] [--apply]
   portman status <port> <proto> [--file <rules.v4>]
-	portman list                [--file <rules.v4>]
-	portman help
+  portman list  [--file <rules.v4>]
+  portman version
+  portman help
 
 Proto:
   tcp | udp | tcp/udp
@@ -35,7 +40,8 @@ Examples:
   portman open 8000 tcp/udp --apply
   portman close 3306 tcp --apply
   portman status 443 tcp
-	portman list
+  portman list
+  portman version
 `)
 	os.Exit(1)
 }
@@ -125,6 +131,9 @@ func main() {
 		for _, it := range items {
 			fmt.Printf("%d/%s\n", it.Port, it.Proto)
 		}
+		return
+	case "version":
+		fmt.Println(version)
 		return
 	case "help":
 		usage()
