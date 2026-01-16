@@ -3,6 +3,8 @@ package rules
 import (
 	"errors"
 	"fmt"
+	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -261,6 +263,134 @@ func Status(content string, port int, protoInput string) (map[Proto]bool, error)
 		_, ok := existing[line]
 		res[pr] = ok
 	}
+
+	return res, nil
+}
+
+type PortRule struct {
+	Port  int
+	Proto Proto
+}
+
+func parsePortmanAcceptRule(line string) (PortRule, bool) {
+	line = strings.TrimSpace(line)
+	if line == "" {
+		return PortRule{}, false
+	}
+	if strings.HasPrefix(line, "#") {
+		return PortRule{}, false
+	}
+
+	fields := strings.Fields(line)
+	if len(fields) < 8 {
+		return PortRule{}, false
+	}
+	// Expect something like:
+	// -A INPUT -p tcp -m tcp --dport 443 -j ACCEPT
+	if fields[0] != "-A" || fields[1] != "INPUT" {
+		return PortRule{}, false
+	}
+
+	var proto Proto
+	port := 0
+	jumpAccept := false
+
+	for i := 2; i < len(fields); i++ {
+		switch fields[i] {
+		case "-p":
+			if i+1 >= len(fields) {
+				return PortRule{}, false
+			}
+			p := strings.ToLower(fields[i+1])
+			switch p {
+			case string(TCP):
+				proto = TCP
+			case string(UDP):
+				proto = UDP
+			default:
+				return PortRule{}, false
+			}
+			i++
+		case "--dport":
+			if i+1 >= len(fields) {
+				return PortRule{}, false
+			}
+			p, err := strconv.Atoi(fields[i+1])
+			if err != nil {
+				return PortRule{}, false
+			}
+			port = p
+			i++
+		case "-j":
+			if i+1 >= len(fields) {
+				return PortRule{}, false
+			}
+			jumpAccept = strings.ToUpper(fields[i+1]) == "ACCEPT"
+			i++
+		}
+	}
+
+	if proto == "" || port == 0 || !jumpAccept {
+		return PortRule{}, false
+	}
+	if err := ValidatePort(port); err != nil {
+		return PortRule{}, false
+	}
+
+	return PortRule{Port: port, Proto: proto}, true
+}
+
+// List returns all open ports managed inside the #PORTMAN block.
+//
+// It only includes rules inside the *filter table between #PORTMAN BEGIN/END,
+// and only rules of the form "-A INPUT ... --dport <port> -j ACCEPT".
+func List(content string) ([]PortRule, error) {
+	content = normalizeNewlines(content)
+	lines := strings.Split(content, "\n")
+
+	fi, err := findFilter(lines)
+	if err != nil {
+		return nil, err
+	}
+
+	beginIdx := -1
+	endIdx := -1
+	for i := fi.filterIdx + 1; i < fi.commitIdx; i++ {
+		if lines[i] == BlockBegin {
+			beginIdx = i
+			continue
+		}
+		if lines[i] == BlockEnd {
+			endIdx = i
+			break
+		}
+	}
+
+	if beginIdx == -1 || endIdx == -1 || beginIdx >= endIdx {
+		return []PortRule{}, nil
+	}
+
+	seen := make(map[PortRule]struct{})
+	res := make([]PortRule, 0)
+
+	for i := beginIdx + 1; i < endIdx; i++ {
+		r, ok := parsePortmanAcceptRule(lines[i])
+		if !ok {
+			continue
+		}
+		if _, exists := seen[r]; exists {
+			continue
+		}
+		seen[r] = struct{}{}
+		res = append(res, r)
+	}
+
+	sort.Slice(res, func(i, j int) bool {
+		if res[i].Port != res[j].Port {
+			return res[i].Port < res[j].Port
+		}
+		return res[i].Proto < res[j].Proto
+	})
 
 	return res, nil
 }
