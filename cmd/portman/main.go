@@ -133,7 +133,7 @@ func main() {
 		}
 		return
 	case "version":
-		fmt.Println(version)
+		fmt.Println("Portman ", version)
 		return
 	case "help":
 		usage()
