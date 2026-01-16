@@ -19,6 +19,7 @@ func usage() {
   portman open   <port> <proto> [--file <rules.v4>] [--dry-run] [--apply]
   portman close  <port> <proto> [--file <rules.v4>] [--dry-run] [--apply]
   portman status <port> <proto> [--file <rules.v4>]
+	portman list                [--file <rules.v4>]
 
 Proto:
   tcp | udp | tcp/udp
@@ -33,6 +34,7 @@ Examples:
   portman open 8000 tcp/udp --apply
   portman close 3306 tcp --apply
   portman status 443 tcp
+	portman list
 `)
 	os.Exit(1)
 }
@@ -92,6 +94,44 @@ func main() {
 	}
 
 	cmd := os.Args[1]
+
+	switch cmd {
+	case "list":
+		fs := flag.NewFlagSet("portman list", flag.ExitOnError)
+		file := fs.String("file", defaultRulesPath(), "path to rules.v4")
+		_ = fs.Parse(os.Args[2:])
+
+		if *file == "" {
+			fmt.Println("Error: --file is required on non-Linux systems")
+			os.Exit(1)
+		}
+
+		contentBytes, err := os.ReadFile(*file)
+		if err != nil {
+			fmt.Printf("Failed to read file: %v\n", err)
+			os.Exit(1)
+		}
+
+		items, err := rules.List(string(contentBytes))
+		if err != nil {
+			fmt.Printf("Error: %v\n", err)
+			os.Exit(1)
+		}
+		if len(items) == 0 {
+			fmt.Println("No open ports in PORTMAN block.")
+			return
+		}
+		for _, it := range items {
+			fmt.Printf("%d/%s\n", it.Port, it.Proto)
+		}
+		return
+	case "open", "close", "status":
+		// handled below
+	default:
+		fmt.Printf("Unknown command: %s\n", cmd)
+		usage()
+	}
+
 	if len(os.Args) < 4 {
 		usage()
 	}
@@ -115,7 +155,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if runtime.GOOS == "linux" && (*apply || strings.HasPrefix(*file, "/etc/")) && !isRootLinux() {
+	if runtime.GOOS == "linux" && (cmd == "open" || cmd == "close") && (*apply || strings.HasPrefix(*file, "/etc/")) && !isRootLinux() {
 		fmt.Println("Error: run as root (sudo) to modify rules and apply iptables-restore")
 		os.Exit(1)
 	}
@@ -232,6 +272,9 @@ func main() {
 				fmt.Printf("%s: closed\n", p)
 			}
 		}
+	// same as just "portman"
+	case "help":
+		usage()
 
 	default:
 		fmt.Printf("Unknown command: %s\n", cmd)
