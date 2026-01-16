@@ -40,8 +40,8 @@ jobs:
           set -euo pipefail
           mkdir -p dist
 
-          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags "-s -w" -o dist/portman-linux-amd64 ./cmd/portman
-          CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -trimpath -ldflags "-s -w" -o dist/portman-linux-arm64 ./cmd/portman
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags "-s -w -X main.version=${GITHUB_REF_NAME}" -o dist/portman-linux-amd64 ./cmd/portman
+          CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -trimpath -ldflags "-s -w -X main.version=${GITHUB_REF_NAME}" -o dist/portman-linux-arm64 ./cmd/portman
 
           chmod +x dist/portman-linux-amd64 dist/portman-linux-arm64
           (cd dist && sha256sum portman-linux-amd64 portman-linux-arm64 > SHASUMS256.txt)
