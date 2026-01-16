@@ -28,6 +28,14 @@ I made this project to simplify the process, especially in Oracle Cloud VPS, whe
 curl -fsSL https://raw.githubusercontent.com/neozmmv/portman/main/install.sh | sudo bash
 ```
 
+This installs the latest GitHub Release.
+
+To install a specific version:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/neozmmv/portman/main/install.sh | sudo PORTMAN_VERSION=v1.0.2 bash
+```
+
 ## Usage
 
 All commands must be run as `root` (or using `sudo`) when modifying or applying firewall rules.
@@ -51,17 +59,6 @@ sudo portman close 443 tcp --apply
 ### Full instructions
 
 Run `sudo portman` to see the full usage.
-
-## Releases / versioning
-
-Releases are created from Git tags using semantic versioning.
-
-- Create a new version tag locally:
-	- `git tag v1.0.0`
-- Push the tag to GitHub:
-	- `git push origin v1.0.0`
-
-This triggers the GitHub Actions release workflow and creates a release named `Portman v1.0.0` with the built artifacts.
 
 ## Why not UFW?
 
