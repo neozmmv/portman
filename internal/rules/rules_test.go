@@ -19,7 +19,7 @@ func readFixture(t *testing.T, name string) string {
 func TestOpenAddsRuleInOracleRulesFile(t *testing.T) {
 	in := readFixture(t, "rules.v4")
 
-	out, changed, err := Open(in, 3306, "tcp")
+	out, changed, err := Open(in, 3308, "tcp")
 	if err != nil {
 		t.Fatalf("Open error: %v", err)
 	}
@@ -27,7 +27,7 @@ func TestOpenAddsRuleInOracleRulesFile(t *testing.T) {
 		t.Fatalf("expected changed=true")
 	}
 
-	want := RuleLine(3306, TCP)
+	want := RuleLine(3308, TCP)
 	if !strings.Contains(out, want) {
 		t.Fatalf("expected output to contain:\n%s", want)
 	}
@@ -43,7 +43,7 @@ func TestOpenAddsRuleInOracleRulesFile(t *testing.T) {
 func TestOpenIsIdempotent(t *testing.T) {
 	in := readFixture(t, "rules.v4")
 
-	out1, changed1, err := Open(in, 3306, "tcp")
+	out1, changed1, err := Open(in, 3308, "tcp")
 	if err != nil {
 		t.Fatalf("Open 1 error: %v", err)
 	}
@@ -51,7 +51,7 @@ func TestOpenIsIdempotent(t *testing.T) {
 		t.Fatalf("expected changed1=true")
 	}
 
-	out2, changed2, err := Open(out1, 3306, "tcp")
+	out2, changed2, err := Open(out1, 3308, "tcp")
 	if err != nil {
 		t.Fatalf("Open 2 error: %v", err)
 	}
@@ -66,7 +66,7 @@ func TestOpenIsIdempotent(t *testing.T) {
 func TestCloseRemovesRule(t *testing.T) {
 	in := readFixture(t, "rules.v4")
 
-	with, changed, err := Open(in, 3306, "tcp")
+	with, changed, err := Open(in, 3308, "tcp")
 	if err != nil {
 		t.Fatalf("Open error: %v", err)
 	}
@@ -74,7 +74,7 @@ func TestCloseRemovesRule(t *testing.T) {
 		t.Fatalf("expected changed=true from Open")
 	}
 
-	out, changedClose, err := Close(with, 3306, "tcp")
+	out, changedClose, err := Close(with, 3308, "tcp")
 	if err != nil {
 		t.Fatalf("Close error: %v", err)
 	}
@@ -82,7 +82,7 @@ func TestCloseRemovesRule(t *testing.T) {
 		t.Fatalf("expected changed=true from Close")
 	}
 
-	rule := RuleLine(3306, TCP)
+	rule := RuleLine(3308, TCP)
 	if strings.Contains(out, rule) {
 		t.Fatalf("expected rule to be removed:\n%s", rule)
 	}
@@ -99,11 +99,35 @@ func TestStatusWorks(t *testing.T) {
 		t.Fatalf("expected 8000 tcp and udp to be open in oracle rules file")
 	}
 
-	st2, err := Status(in, 3306, "tcp")
+	st2, err := Status(in, 3308, "tcp")
 	if err != nil {
 		t.Fatalf("Status error: %v", err)
 	}
 	if st2[TCP] {
-		t.Fatalf("expected 3306 tcp to be closed initially")
+		t.Fatalf("expected 3308 tcp to be closed initially")
+	}
+}
+
+func TestListReturnsPortsFromPortmanBlock(t *testing.T) {
+	in := readFixture(t, "rules.v4")
+
+	items, err := List(in)
+	if err != nil {
+		t.Fatalf("List error: %v", err)
+	}
+
+	want := []PortRule{
+		{Port: 3306, Proto: TCP},
+		{Port: 3307, Proto: TCP},
+		{Port: 3307, Proto: UDP},
+	}
+
+	if len(items) != len(want) {
+		t.Fatalf("expected %d items, got %d: %#v", len(want), len(items), items)
+	}
+	for i := range want {
+		if items[i] != want[i] {
+			t.Fatalf("at %d: expected %#v, got %#v", i, want[i], items[i])
+		}
 	}
 }

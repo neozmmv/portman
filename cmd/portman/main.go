@@ -20,6 +20,7 @@ func usage() {
   portman close  <port> <proto> [--file <rules.v4>] [--dry-run] [--apply]
   portman status <port> <proto> [--file <rules.v4>]
 	portman list                [--file <rules.v4>]
+	portman help
 
 Proto:
   tcp | udp | tcp/udp
@@ -125,6 +126,8 @@ func main() {
 			fmt.Printf("%d/%s\n", it.Port, it.Proto)
 		}
 		return
+	case "help":
+		usage()
 	case "open", "close", "status":
 		// handled below
 	default:
@@ -272,10 +275,6 @@ func main() {
 				fmt.Printf("%s: closed\n", p)
 			}
 		}
-	// same as just "portman"
-	case "help":
-		usage()
-
 	default:
 		fmt.Printf("Unknown command: %s\n", cmd)
 		usage()
