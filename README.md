@@ -52,6 +52,17 @@ sudo portman close 443 tcp --apply
 
 Run `sudo portman` to see the full usage.
 
+## Releases / versioning
+
+Releases are created from Git tags using semantic versioning.
+
+- Create a new version tag locally:
+	- `git tag v1.0.0`
+- Push the tag to GitHub:
+	- `git push origin v1.0.0`
+
+This triggers the GitHub Actions release workflow and creates a release named `Portman v1.0.0` with the built artifacts.
+
 ## Why not UFW?
 
 While **UFW** is a popular and convenient firewall manager on Ubuntu, it is not well suited for all environments, especially **Oracle Cloud Infrastructure (OCI)**.

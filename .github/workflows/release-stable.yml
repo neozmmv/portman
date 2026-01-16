@@ -1,15 +1,16 @@
-name: Build and release (stable)
+name: Build and release
 
 on:
   push:
-    branches: [main]
+    tags:
+      - "v*"
   workflow_dispatch: {}
 
 permissions:
   contents: write
 
 concurrency:
-  group: release-stable
+  group: release-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -40,22 +41,12 @@ jobs:
           chmod +x dist/portman-linux-amd64 dist/portman-linux-arm64
           (cd dist && sha256sum portman-linux-amd64 portman-linux-arm64 > SHASUMS256.txt)
 
-      - name: Move/create the stable tag on this commit
-        shell: bash
-        run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-          git tag -f stable "${GITHUB_SHA}"
-          git push origin -f stable
-
-      - name: Create/update GitHub Release (stable)
+      - name: Create GitHub Release
         uses: ncipollo/release-action@v1
         with:
-          tag: stable
-          name: stable
-          allowUpdates: true
-          replacesArtifacts: true
+          tag: ${{ github.ref_name }}
+          name: Portman ${{ github.ref_name }}
+          allowUpdates: false
+          replacesArtifacts: false
           generateReleaseNotes: true
           artifacts: "dist/*"
